@@ -161,6 +161,11 @@ export async function step(cfg, state, root, now = new Date(), sharedMarket = nu
     state.last_skip = reasons.slice(0, 240);
     return { state, skip: state.last_skip, events, signals };
   }
+  if (best.signal_id && state.last_signal_id === best.signal_id) {
+    state.last_skip = `${best.symbol}:duplicate_signal`;
+    return { state, skip: state.last_skip, events, signals };
+  }
+  if (best.signal_id) state.last_signal_id = best.signal_id;
 
   const quote = market[best.symbol].quote;
   const pair = market[best.symbol].pair;

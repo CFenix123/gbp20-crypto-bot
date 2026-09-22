@@ -17,10 +17,12 @@
     "scorecard": "node bot/scorecard.js",
     "scorecard:alpha": "node bot/scorecard.js --alpha",
     "scorecard:mind": "node bot/scorecard.js --mind",
+    "scorecard:scalp": "node bot/scorecard.js --scalp",
     "reset": "node bot/reset.js",
     "reset:alpha": "node bot/reset.js --alpha",
     "reset:mind": "node bot/reset.js --mind",
+    "reset:scalp": "node bot/reset.js --scalp",
     "replay24": "node bot/replay24.js",
-    "test": "node bot/video_model.test.js && node bot/paper.test.js && node bot/risk.test.js && node bot/quant_model.test.js && node bot/mind_model.test.js"
+    "test": "node bot/video_model.test.js && node bot/paper.test.js && node bot/risk.test.js && node bot/quant_model.test.js && node bot/mind_model.test.js && node bot/scalp_model.test.js"
   }
 }

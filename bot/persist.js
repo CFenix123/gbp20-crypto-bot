@@ -5,9 +5,11 @@ const FILES = [
   "data/state.json",
   "data/alpha_state.json",
   "data/mind_state.json",
+  "data/scalp_state.json",
   "data/journal.csv",
   "data/alpha_journal.csv",
   "data/mind_journal.csv",
+  "data/scalp_journal.csv",
 ];
 
 function creds() {

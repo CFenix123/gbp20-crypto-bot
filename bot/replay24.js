@@ -136,6 +136,7 @@ const books = [
   ["config.json", "TJR"],
   ["config.alpha.json", "ALPHA"],
   ["config.mind.json", "MIND"],
+  ["config.scalp.json", "SCALP"],
 ];
 
 console.log("PAPER 24h replay — each book isolated. Not financial advice.");

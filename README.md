@@ -54,15 +54,16 @@ npm run bot
 
 Judge edge only after **≥30** closed paper trades. If expectancy is ≤ 0 after fees, do not go live.
 
-## Three-book paper test (TJR vs ALPHA vs MIND)
+## Four-book paper test (TJR vs ALPHA vs MIND vs SCALP)
 
-One process, one Kraken feed, three isolated £20 PAPER ledgers:
+One process, one Kraken feed, four isolated £20 PAPER ledgers:
 
 | Book | Rules |
 |---|---|
 | **TJR** | Video model (sweep / BOS / iFVG / FVG / SMT) from [yiuFUp0kFz8](https://www.youtube.com/watch?v=yiuFUp0kFz8) |
 | **ALPHA** | Candlestick patterns from [tW13N4Hll88](https://www.youtube.com/watch?v=tW13N4Hll88) (engulfing, momentum, wick cluster, doji+confirm, hammer/star, tweezer, marubozu) at 15m support/resistance. Fees still skip stops under 1.2%. |
 | **MIND** | Mind Math Money patterns from [lEk4cSA7cqc](https://www.youtube.com/watch?v=lEk4cSA7cqc) (morning/evening star, piercing/dark cloud, inverted hammer/hanging man, three methods, flags, 2×-body momentum). Reversals need a prior opposite trend + S/R; continuations need the same-direction trend. |
+| **SCALP** | Short-term scan / score / long-or-short. Needs score ≥70 on one side only, candle + structure + S/R + volume + HTF. 30-minute max hold, 2-minute cooldown, no auto-flip. Isolated 1x paper shorts. **NO TRADE** if both sides qualify or neither does. Not live. |
 
 ```powershell
 cd C:\Users\tom61\gbp20-crypto-bot
@@ -76,6 +77,7 @@ Dashboard: [http://127.0.0.1:8787](http://127.0.0.1:8787) — or the Render URL 
 npm run scorecard
 npm run scorecard:alpha
 npm run scorecard:mind
+npm run scorecard:scalp
 npm run replay24
 ```
 

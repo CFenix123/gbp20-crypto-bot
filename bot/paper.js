@@ -80,6 +80,7 @@ export function openLong(state, { symbol, qty, price, feeRate, stop, tp, setup, 
     fee_in: fee,
     fee_rate_in: feeRate,
     opened_at: now.toISOString(),
+    initial_stop: stop,
   };
   state.working = null;
   state.trades_today = Number(state.trades_today || 0) + 1;
@@ -108,6 +109,7 @@ export function openShort(state, { symbol, qty, price, feeRate, stop, tp, setup,
     fee_in: fee,
     fee_rate_in: feeRate,
     opened_at: now.toISOString(),
+    initial_stop: stop,
   };
   state.working = null;
   state.trades_today = Number(state.trades_today || 0) + 1;
@@ -223,10 +225,42 @@ function fillWorking(state, quote, cfg, now) {
   );
 }
 
+function applyScalpManagement(pos, quote, cfg, now) {
+  if (cfg.entry_model !== "scalp") return null;
+  const maxMin = Number(cfg.max_trade_duration_minutes || 0);
+  if (maxMin > 0 && pos.opened_at) {
+    const age = now.getTime() - Date.parse(pos.opened_at);
+    if (age >= maxMin * 60 * 1000) return "time_exit";
+  }
+  const initial = Number(pos.initial_stop || pos.stop);
+  const risk = Math.abs(Number(pos.entry) - initial);
+  if (!(risk > 0)) return null;
+  const last = Number(quote.last);
+  const beAt = Number(cfg.break_even_at_r || 0);
+  const trailAt = Number(cfg.trail_at_r || 0);
+  const rNow = pos.side === "short" ? (Number(pos.entry) - last) / risk : (last - Number(pos.entry)) / risk;
+  if (beAt > 0 && rNow >= beAt) {
+    if (pos.side === "short") pos.stop = Math.min(Number(pos.stop), Number(pos.entry) * 0.9997);
+    else pos.stop = Math.max(Number(pos.stop), Number(pos.entry) * 1.0003);
+  }
+  if (trailAt > 0 && rNow >= trailAt) {
+    if (pos.side === "short") pos.stop = Math.min(Number(pos.stop), last + risk * 0.8);
+    else pos.stop = Math.max(Number(pos.stop), last - risk * 0.8);
+  }
+  return null;
+}
+
 function managePosition(state, quote, cfg, now) {
   const pos = state.position;
   const short = pos.side === "short";
   const slip = Number(cfg.slippage_pct || 0);
+  const timeExit = applyScalpManagement(pos, quote, cfg, now);
+  if (timeExit) {
+    const px = quote.last;
+    return short
+      ? { fill: "taker", ...closeShort(state, { price: px, feeRate: cfg.taker_fee, exitReason: timeExit }, now) }
+      : { fill: "taker", ...closeLong(state, { price: px, feeRate: cfg.taker_fee, exitReason: timeExit }, now) };
+  }
   if (short) {
     const stopHit = quote.last >= pos.stop || quote.ask >= pos.stop;
     if (stopHit) {
