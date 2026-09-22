@@ -1,5 +1,5 @@
 import { detectThreeSoldiersCrows, detectPinBar } from "./scalp_patterns.js";
-import { marketStructure, scoreDirection, evaluateScalpEntry } from "./scalp_model.js";
+import { marketStructure, scoreDirection, evaluateScalpEntry, regimeOf } from "./scalp_model.js";
 
 function bar(t, o, h, l, c, v = 2) {
   return { t: new Date(t).toISOString(), o, h, l, c, v };
@@ -73,6 +73,17 @@ function assert(cond, msg) {
   };
   const sig = evaluateScalpEntry(ltf, ltf, { last: 100, spreadPct: 0.0002 }, cfg, new Date("2026-09-22T14:00:00Z"));
   assert(sig.take === false, `flat tape should be NO TRADE, got ${sig.reason}`);
+}
+
+{
+  const typicalBtc = regimeOf(
+    { atr: 70, atrMedian: 80, ema9: 64000, ema21: 63800 },
+    { bias: "up" },
+    64000
+  );
+  assert(typicalBtc.regime !== "low_vol", `typical BTC 5m ATR marked ${typicalBtc.regime}`);
+  const dead = regimeOf({ atr: 8, atrMedian: 80, ema9: 64000, ema21: 63800 }, { bias: "chop" }, 64000);
+  assert(dead.regime === "low_vol", `dead tape ${dead.regime}`);
 }
 
 console.log("scalp_model.test.js ok");

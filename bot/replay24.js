@@ -132,12 +132,22 @@ for (const p of pairs) {
 }
 
 const feed = { byPair };
-const books = [
+const allBooks = [
   ["config.json", "TJR"],
   ["config.alpha.json", "ALPHA"],
   ["config.mind.json", "MIND"],
   ["config.scalp.json", "SCALP"],
 ];
+const only = process.argv.includes("--scalp")
+  ? "SCALP"
+  : process.argv.includes("--mind")
+    ? "MIND"
+    : process.argv.includes("--alpha")
+      ? "ALPHA"
+      : process.argv.includes("--tjr")
+        ? "TJR"
+        : null;
+const books = only ? allBooks.filter(([, label]) => label === only) : allBooks;
 
 console.log("PAPER 24h replay — each book isolated. Not financial advice.");
 console.log(`Window ${new Date(from).toISOString()} → ${new Date(to).toISOString()}`);

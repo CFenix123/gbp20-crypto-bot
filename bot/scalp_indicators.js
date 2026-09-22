@@ -1,5 +1,5 @@
 import { closedBars } from "./video_model.js";
-import { emaSeries, atr, rsi } from "./quant_model.js";
+import { emaSeries, atr, atrMedian, rsi } from "./quant_model.js";
 
 function n(v) {
   return Number(v);
@@ -66,6 +66,7 @@ export function snapshot(ltf, htf, cfg = {}) {
     ema50: lastEma(ltf, emaSlow),
     rsi: rsi(ltf, rsiP),
     atr: atr(ltf, atrP),
+    atrMedian: atrMedian(ltf, atrP),
     atrHtf: atr(htf, atrP),
     relVol: relativeVolume(ltf, Number(cfg.volume_sma || 20)),
     vwap: vwap(ltf),

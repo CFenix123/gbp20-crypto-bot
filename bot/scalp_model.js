@@ -37,8 +37,9 @@ export function regimeOf(ind, struct, px) {
     if (ind.ema9 > ind.ema21 && px > ind.ema21) trend = trend === "down" ? "chop" : "up";
     if (ind.ema9 < ind.ema21 && px < ind.ema21) trend = trend === "up" ? "chop" : "down";
   }
-  if (vol > 0 && vol < 0.002) return { regime: "low_vol", trend };
-  if (vol > 0.02) return { regime: "high_vol", trend };
+  const vsMed = ind.atr && ind.atrMedian > 0 ? ind.atr / ind.atrMedian : 1;
+  if ((vol > 0 && vol < 0.00025) || vsMed < 0.4) return { regime: "low_vol", trend };
+  if (vol > 0.02 || vsMed > 3) return { regime: "high_vol", trend };
   if (trend === "up") return { regime: "bullish", trend };
   if (trend === "down") return { regime: "bearish", trend };
   return { regime: "sideways", trend };
