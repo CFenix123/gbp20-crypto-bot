@@ -39,7 +39,7 @@ function authorized(url, secret) {
   return Boolean(secret) && url.searchParams.get("k") === secret;
 }
 
-export function startUiServer({ root, port = 8787, host = "0.0.0.0", secret, getSnapshot }) {
+export function startUiServer({ root, port = 8787, host = "0.0.0.0", secret, getSnapshot, getLedger }) {
   const uiDir = path.join(root, "ui");
   const server = http.createServer((req, res) => {
     const url = new URL(req.url || "/", "http://127.0.0.1");
@@ -60,6 +60,14 @@ export function startUiServer({ root, port = 8787, host = "0.0.0.0", secret, get
         "Cache-Control": "no-store",
       });
       res.end(body);
+      return;
+    }
+    if (url.pathname === "/api/ledger" && getLedger) {
+      res.writeHead(200, {
+        "Content-Type": "application/json; charset=utf-8",
+        "Cache-Control": "no-store",
+      });
+      res.end(JSON.stringify(getLedger()));
       return;
     }
     let file = url.pathname === "/" ? "/index.html" : url.pathname;

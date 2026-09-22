@@ -7,10 +7,12 @@ import { dualSnapshot, writeSnapshot } from "./snapshot.js";
 import { startUiServer, loadOrCreateSecret } from "./server.js";
 import { defaultState } from "./paper.js";
 import { ensureJournal } from "./journal.js";
+import { pullLedgers, queuePushLedgers, readLedgerBundle } from "./persist.js";
 import fs from "node:fs";
 import { spawn } from "node:child_process";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+await pullLedgers(root);
 
 function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
@@ -52,6 +54,7 @@ await startUiServer({
   port,
   secret,
   getSnapshot: () => dualSnapshot(root, books),
+  getLedger: () => readLedgerBundle(root),
 });
 
 const once = process.argv.includes("--once");
@@ -121,11 +124,28 @@ do {
     if (inWindow || needManage) {
       market = await loadMarket(tjr.cfg, { quotesOnly: needManage && !inWindow });
     }
+    let ledgerDirty = false;
     for (const book of books) {
+      const before = JSON.stringify({
+        p: book.state.position,
+        w: book.state.working,
+        e: book.state.equity,
+        t: book.state.trades_today,
+        k: book.state.kill_switch,
+      });
       const out = await step(book.cfg, book.state, root, now, market);
       book.state = out.state;
       saveState(book.cfg, root, book.state);
+      const after = JSON.stringify({
+        p: book.state.position,
+        w: book.state.working,
+        e: book.state.equity,
+        t: book.state.trades_today,
+        k: book.state.kill_switch,
+      });
+      if (after !== before || out.events?.length) ledgerDirty = true;
     }
+    if (ledgerDirty) queuePushLedgers(root);
     writeSnapshot(root, dualSnapshot(root, books, now));
     ticks += 1;
     if (once || ticks === 1 || ticks % 8 === 0) {
