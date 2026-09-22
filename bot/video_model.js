@@ -23,25 +23,43 @@ export function closedBars(bars) {
   return bars.length >= 2 ? bars.slice(0, -1) : bars;
 }
 
+const ET_MIN_FMT = new Intl.DateTimeFormat("en-US", {
+  timeZone: "America/New_York",
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false,
+});
+const ET_DAY_FMT = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "America/New_York",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+const etMinCache = new Map();
+const etDayCache = new Map();
+
+function etCacheKey(d) {
+  return Math.floor(new Date(d).getTime() / 60000);
+}
+
 export function etMinutes(d) {
-  const fmt = new Intl.DateTimeFormat("en-US", {
-    timeZone: "America/New_York",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
-  const parts = Object.fromEntries(fmt.formatToParts(d).map((p) => [p.type, p.value]));
+  const key = etCacheKey(d);
+  if (etMinCache.has(key)) return etMinCache.get(key);
+  const parts = Object.fromEntries(ET_MIN_FMT.formatToParts(d).map((p) => [p.type, p.value]));
   const hour = Number(parts.hour === "24" ? 0 : parts.hour);
-  return hour * 60 + Number(parts.minute);
+  const mins = hour * 60 + Number(parts.minute);
+  etMinCache.set(key, mins);
+  if (etMinCache.size > 4000) etMinCache.clear();
+  return mins;
 }
 
 export function etDayKey(d) {
-  return new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/New_York",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  }).format(d);
+  const key = etCacheKey(d);
+  if (etDayCache.has(key)) return etDayCache.get(key);
+  const day = ET_DAY_FMT.format(d);
+  etDayCache.set(key, day);
+  if (etDayCache.size > 4000) etDayCache.clear();
+  return day;
 }
 
 function prevEtDayKey(dayKey) {

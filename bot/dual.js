@@ -1,6 +1,5 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import cluster from "node:cluster";
 import fs from "node:fs";
 import { spawn } from "node:child_process";
 import { isRateLimitError } from "./kraken.js";
@@ -13,7 +12,6 @@ import { ensureJournal } from "./journal.js";
 import { pullLedgers, queuePushLedgers, readLedgerBundle } from "./persist.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const once = process.argv.includes("--once");
 
 function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
@@ -23,14 +21,12 @@ function yieldLoop() {
   return new Promise((r) => setImmediate(r));
 }
 
-function onFatal(label) {
-  process.on("uncaughtException", (err) => {
-    console.error(`[PAPER] ${label} uncaught`, err?.stack || err);
-  });
-  process.on("unhandledRejection", (err) => {
-    console.error(`[PAPER] ${label} rejection`, err?.stack || err);
-  });
-}
+process.on("uncaughtException", (err) => {
+  console.error("[PAPER] uncaught", err?.stack || err);
+});
+process.on("unhandledRejection", (err) => {
+  console.error("[PAPER] rejection", err?.stack || err);
+});
 
 function bootBook(file) {
   const cfg = loadConfig(root, file);
@@ -44,21 +40,14 @@ function bootBook(file) {
   return { cfg, state: loadState(cfg, root) };
 }
 
-function publicHost() {
-  return (
-    process.env.PUBLIC_URL ||
-    process.env.RENDER_EXTERNAL_URL ||
-    (process.env.FLY_APP_NAME ? `https://${process.env.FLY_APP_NAME}.fly.dev` : "")
-  );
-}
+const port = Number(process.env.PORT || process.env.DASH_PORT || 8787);
+const secret = loadOrCreateSecret(root);
+const publicHost =
+  process.env.PUBLIC_URL ||
+  process.env.RENDER_EXTERNAL_URL ||
+  (process.env.FLY_APP_NAME ? `https://${process.env.FLY_APP_NAME}.fly.dev` : "");
 
-function diskSnapshot() {
-  const file = path.join(root, "data", "snapshot.json");
-  try {
-    if (fs.existsSync(file)) return JSON.parse(fs.readFileSync(file, "utf8"));
-  } catch (err) {
-    console.error("[PAPER] snapshot read", err.message || err);
-  }
+function placeholderSnapshot() {
   return {
     mode: "PAPER",
     venue: "kraken",
@@ -68,21 +57,36 @@ function diskSnapshot() {
   };
 }
 
-function startKeepAlive(url) {
-  const health = `${url.replace(/\/$/, "")}/health`;
-  const ping = async () => {
-    try {
-      const r = await fetch(health, { headers: { "user-agent": "gbp20-keepalive" } });
-      if (!r.ok) console.log(`[PAPER] keepalive ${r.status}`);
-    } catch (err) {
-      console.log(`[PAPER] keepalive ${err.message || err}`);
-    }
-  };
-  ping();
-  setInterval(ping, 4 * 60 * 1000);
+let books = [];
+
+await startUiServer({
+  root,
+  port,
+  secret,
+  getSnapshot: () => (books.length ? dualSnapshot(root, books) : placeholderSnapshot()),
+  getLedger: () => readLedgerBundle(root),
+});
+
+if (publicHost) {
+  const link = `${publicHost.replace(/\/$/, "")}/?k=${secret}`;
+  fs.mkdirSync(path.join(root, "data"), { recursive: true });
+  fs.writeFileSync(path.join(root, "data", "phone_url.txt"), link);
+  console.log(`[PAPER] PHONE LINK  ${link}`);
 }
 
-function startPhoneTunnel(port, secret) {
+await pullLedgers(root);
+
+console.log("PAPER triple books — TJR vs ALPHA vs MIND. Not financial advice.");
+console.log("20% per trade is a ceiling. Shared Kraken feed so we do not double-hit the API.");
+
+const tjr = bootBook("config.json");
+const alpha = bootBook("config.alpha.json");
+const mind = bootBook("config.mind.json");
+books = [tjr, alpha, mind];
+
+const once = process.argv.includes("--once");
+
+function startPhoneTunnel() {
   if (
     process.env.FLY_APP_NAME ||
     process.env.RENDER ||
@@ -119,112 +123,85 @@ function startPhoneTunnel(port, secret) {
   child.unref();
 }
 
-async function startPrimary() {
-  onFatal("web");
-  const port = Number(process.env.PORT || process.env.DASH_PORT || 8787);
-  const secret = loadOrCreateSecret(root);
-  const host = publicHost();
-  if (host) {
-    const link = `${host.replace(/\/$/, "")}/?k=${secret}`;
-    fs.mkdirSync(path.join(root, "data"), { recursive: true });
-    fs.writeFileSync(path.join(root, "data", "phone_url.txt"), link);
-    console.log(`[PAPER] PHONE LINK  ${link}`);
-  }
-  await startUiServer({
-    root,
-    port,
-    secret,
-    getSnapshot: () => diskSnapshot(),
-    getLedger: () => readLedgerBundle(root),
-  });
-  startPhoneTunnel(port, secret);
-  if (host) startKeepAlive(host);
-  const worker = cluster.fork();
-  worker.on("exit", (code, signal) => {
-    console.error(`[PAPER] trader worker exited code=${code} signal=${signal} — respawn`);
-    setTimeout(() => cluster.fork(), 1500);
-  });
-}
+if (!once) startPhoneTunnel();
 
-async function startTrader() {
-  onFatal("trader");
-  await pullLedgers(root);
-  console.log("PAPER triple books — TJR vs ALPHA vs MIND. Not financial advice.");
-  console.log("20% per trade is a ceiling. Shared Kraken feed so we do not double-hit the API.");
-
-  const tjr = bootBook("config.json");
-  const alpha = bootBook("config.alpha.json");
-  const mind = bootBook("config.mind.json");
-  const books = [tjr, alpha, mind];
-  writeSnapshot(root, dualSnapshot(root, books));
-
-  let ticks = 0;
-  do {
-    const now = new Date();
+function startKeepAlive(url) {
+  const health = `${url.replace(/\/$/, "")}/health`;
+  const ping = async () => {
     try {
-      const inWindow = sessionGate(now, tjr.cfg, "A").ok;
-      const needManage = books.some((b) => b.state.position || b.state.working);
-      let market = null;
-      if (inWindow || needManage) {
-        market = await loadMarket(tjr.cfg, { quotesOnly: needManage && !inWindow });
-      }
-      await yieldLoop();
-      let ledgerDirty = false;
-      for (const book of books) {
-        const before = JSON.stringify({
-          p: book.state.position,
-          w: book.state.working,
-          e: book.state.equity,
-          t: book.state.trades_today,
-          k: book.state.kill_switch,
-        });
-        const out = await step(book.cfg, book.state, root, now, market);
-        book.state = out.state;
-        saveState(book.cfg, root, book.state);
-        const after = JSON.stringify({
-          p: book.state.position,
-          w: book.state.working,
-          e: book.state.equity,
-          t: book.state.trades_today,
-          k: book.state.kill_switch,
-        });
-        if (after !== before || out.events?.length) ledgerDirty = true;
-        await yieldLoop();
-      }
-      if (ledgerDirty) queuePushLedgers(root);
-      writeSnapshot(root, dualSnapshot(root, books, now));
-      ticks += 1;
-      if (once || ticks === 1 || ticks % 8 === 0) {
-        const line = books
-          .map((b) => {
-            const n = b.cfg.name;
-            const p = b.state.position
-              ? `${b.state.position.side} ${b.state.position.symbol}`
-              : b.state.working
-                ? `working ${b.state.working.symbol}`
-                : "flat";
-            return `${n} £${Number(b.state.equity ?? 20).toFixed(2)} ${p}`;
-          })
-          .join(" | ");
-        console.log(`[PAPER] ${line} sess=${inWindow ? "open" : "idle"}`);
-      }
+      const r = await fetch(health, { headers: { "user-agent": "gbp20-keepalive" } });
+      if (!r.ok) console.log(`[PAPER] keepalive ${r.status}`);
     } catch (err) {
-      if (isRateLimitError(err)) {
-        const wait = Number(tjr.cfg.rate_limit_backoff_seconds || 25);
-        console.error(`[PAPER] Kraken rate limit — backing off ${wait}s`);
-        if (once) process.exit(1);
-        await sleep(wait * 1000);
-        continue;
-      }
-      console.error("[PAPER] step error", err.message || err);
-      if (once) process.exit(1);
+      console.log(`[PAPER] keepalive ${err.message || err}`);
     }
-    if (!once) await sleep(Number(tjr.cfg.poll_seconds || 15) * 1000);
-  } while (!once);
+  };
+  setTimeout(ping, 20_000);
+  setInterval(ping, 4 * 60 * 1000);
 }
 
-if (cluster.isPrimary && !once) {
-  await startPrimary();
-} else {
-  await startTrader();
-}
+if (!once && publicHost) startKeepAlive(publicHost);
+
+let ticks = 0;
+
+do {
+  const now = new Date();
+  try {
+    const inWindow = sessionGate(now, tjr.cfg, "A").ok;
+    const needManage = books.some((b) => b.state.position || b.state.working);
+    let market = null;
+    if (inWindow || needManage) {
+      market = await loadMarket(tjr.cfg, { quotesOnly: needManage && !inWindow });
+    }
+    await yieldLoop();
+    let ledgerDirty = false;
+    for (const book of books) {
+      const before = JSON.stringify({
+        p: book.state.position,
+        w: book.state.working,
+        e: book.state.equity,
+        t: book.state.trades_today,
+        k: book.state.kill_switch,
+      });
+      const out = await step(book.cfg, book.state, root, now, market);
+      book.state = out.state;
+      saveState(book.cfg, root, book.state);
+      const after = JSON.stringify({
+        p: book.state.position,
+        w: book.state.working,
+        e: book.state.equity,
+        t: book.state.trades_today,
+        k: book.state.kill_switch,
+      });
+      if (after !== before || out.events?.length) ledgerDirty = true;
+      await yieldLoop();
+    }
+    if (ledgerDirty) queuePushLedgers(root);
+    writeSnapshot(root, dualSnapshot(root, books, now));
+    ticks += 1;
+    if (once || ticks === 1 || ticks % 8 === 0) {
+      const line = books
+        .map((b) => {
+          const n = b.cfg.name;
+          const p = b.state.position
+            ? `${b.state.position.side} ${b.state.position.symbol}`
+            : b.state.working
+              ? `working ${b.state.working.symbol}`
+              : "flat";
+          return `${n} £${Number(b.state.equity ?? 20).toFixed(2)} ${p}`;
+        })
+        .join(" | ");
+      console.log(`[PAPER] ${line} sess=${inWindow ? "open" : "idle"}`);
+    }
+  } catch (err) {
+    if (isRateLimitError(err)) {
+      const wait = Number(tjr.cfg.rate_limit_backoff_seconds || 25);
+      console.error(`[PAPER] Kraken rate limit — backing off ${wait}s`);
+      if (once) process.exit(1);
+      await sleep(wait * 1000);
+      continue;
+    }
+    console.error("[PAPER] step error", err.message || err);
+    if (once) process.exit(1);
+  }
+  if (!once) await sleep(Number(tjr.cfg.poll_seconds || 15) * 1000);
+} while (!once);

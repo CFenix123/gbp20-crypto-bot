@@ -47,8 +47,8 @@ export async function loadMarket(cfg, { quotesOnly = false } = {}) {
     let htf = [];
     let ltf = [];
     if (!quotesOnly) {
-      htf = await fetchOhlc(sym.pair, cfg.htf_interval, 90_000);
-      ltf = await fetchOhlc(sym.pair, cfg.ltf_interval, 45_000);
+      htf = (await fetchOhlc(sym.pair, cfg.htf_interval, 90_000)).slice(-160);
+      ltf = (await fetchOhlc(sym.pair, cfg.ltf_interval, 45_000)).slice(-240);
     }
     market[sym.id] = {
       ...sym,
