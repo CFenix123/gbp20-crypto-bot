@@ -95,6 +95,21 @@ function startPhoneTunnel() {
 
 if (!once) startPhoneTunnel();
 
+function startKeepAlive(url) {
+  const health = `${url.replace(/\/$/, "")}/health`;
+  const ping = async () => {
+    try {
+      const r = await fetch(health, { headers: { "user-agent": "gbp20-keepalive" } });
+      if (!r.ok) console.log(`[PAPER] keepalive ${r.status}`);
+    } catch (err) {
+      console.log(`[PAPER] keepalive ${err.message || err}`);
+    }
+  };
+  setInterval(ping, 8 * 60 * 1000);
+}
+
+if (!once && publicHost) startKeepAlive(publicHost);
+
 let ticks = 0;
 
 do {

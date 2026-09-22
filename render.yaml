@@ -4,7 +4,7 @@ services:
     runtime: node
     plan: free
     region: frankfurt
-    buildCommand: "node -e \"process.exit(0)\""
+    buildCommand: "true"
     startCommand: node bot/dual.js
     healthCheckPath: /health
     envVars:
