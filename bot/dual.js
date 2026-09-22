@@ -76,14 +76,15 @@ if (publicHost) {
 
 await pullLedgers(root);
 
-console.log("PAPER four books — TJR vs ALPHA vs MIND vs SCALP. Not financial advice.");
+console.log("PAPER five books — TJR vs ALPHA vs MIND vs SCALP vs SPEED. Not financial advice.");
 console.log("20% per trade is a ceiling. Shared Kraken feed so we do not double-hit the API.");
 
 const tjr = bootBook("config.json");
 const alpha = bootBook("config.alpha.json");
 const mind = bootBook("config.mind.json");
 const scalp = bootBook("config.scalp.json");
-books = [tjr, alpha, mind, scalp];
+const speed = bootBook("config.speed.json");
+books = [tjr, alpha, mind, scalp, speed];
 
 const once = process.argv.includes("--once");
 

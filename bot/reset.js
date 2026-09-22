@@ -6,9 +6,11 @@ import { ensureJournal } from "./journal.js";
 import { loadConfig } from "./trader.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const file = process.argv.includes("--scalp")
-  ? "config.scalp.json"
-  : process.argv.includes("--mind")
+const file = process.argv.includes("--speed")
+  ? "config.speed.json"
+  : process.argv.includes("--scalp")
+    ? "config.scalp.json"
+    : process.argv.includes("--mind")
     ? "config.mind.json"
     : process.argv.includes("--alpha")
       ? "config.alpha.json"

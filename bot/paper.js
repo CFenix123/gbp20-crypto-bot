@@ -226,7 +226,7 @@ function fillWorking(state, quote, cfg, now) {
 }
 
 function applyScalpManagement(pos, quote, cfg, now) {
-  if (cfg.entry_model !== "scalp") return null;
+  if (cfg.entry_model !== "scalp" && cfg.entry_model !== "speed") return null;
   const maxMin = Number(cfg.max_trade_duration_minutes || 0);
   if (maxMin > 0 && pos.opened_at) {
     const age = now.getTime() - Date.parse(pos.opened_at);
