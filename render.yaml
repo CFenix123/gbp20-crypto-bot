@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: gbp20-paper
+    runtime: node
+    plan: free
+    region: frankfurt
+    buildCommand: "node -e \"process.exit(0)\""
+    startCommand: node bot/dual.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: SKIP_TUNNEL
+        value: "1"
+      - key: DASH_SECRET
+        sync: false

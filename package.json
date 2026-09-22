@@ -1,0 +1,23 @@
+{
+  "name": "gbp20-crypto-bot",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "description": "PAPER Kraken crypto day bot (£20) using TJR rules from yiuFUp0kFz8. Not financial advice.",
+  "scripts": {
+    "bot": "node bot/main.js",
+    "both": "node bot/dual.js",
+    "once": "node bot/main.js --once",
+    "once:both": "node bot/dual.js --once",
+    "start": "node bot/dual.js",
+    "status": "node bot/status.js",
+    "scorecard": "node bot/scorecard.js",
+    "scorecard:alpha": "node bot/scorecard.js --alpha",
+    "reset": "node bot/reset.js",
+    "reset:alpha": "node bot/reset.js --alpha",
+    "test": "node bot/video_model.test.js && node bot/paper.test.js && node bot/risk.test.js && node bot/quant_model.test.js"
+  }
+}

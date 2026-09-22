@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PAPER · TJR vs ALPHA</title>
+  <style>
+    :root {
+      --bg: #12110f;
+      --ink: #ebe6dc;
+      --muted: #9a9386;
+      --line: #2a2824;
+      --tjr: #c4a35a;
+      --alpha: #6ea8a0;
+      --bad: #c45c4a;
+      --ok: #7d9a6f;
+      --card: #1b1a17;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.45 "Segoe UI", sans-serif; }
+    header {
+      display: flex; justify-content: space-between; align-items: baseline;
+      padding: 20px 28px 8px; border-bottom: 1px solid var(--line);
+    }
+    header h1 { font-size: 18px; font-weight: 600; margin: 0; letter-spacing: 0.04em; }
+    header p { margin: 0; color: var(--muted); font-size: 13px; }
+    .meta { padding: 10px 28px; color: var(--muted); font-size: 13px; display: flex; gap: 18px; flex-wrap: wrap; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; background: var(--ok); }
+    .dot.off { background: var(--bad); }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 16px 28px 28px; }
+    @media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+    article {
+      background: var(--card); border: 1px solid var(--line); padding: 18px 18px 12px;
+    }
+    article.tjr { border-top: 3px solid var(--tjr); }
+    article.alpha { border-top: 3px solid var(--alpha); }
+    .kicker { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+    article h2 { margin: 4px 0 12px; font-size: 22px; }
+    .eq { font-variant-numeric: tabular-nums; font-size: 32px; font-weight: 600; }
+    .row { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-top: 1px solid var(--line); font-variant-numeric: tabular-nums; }
+    .lbl { color: var(--muted); }
+    .pos { margin-top: 10px; padding: 10px; background: #141312; font-size: 13px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
+    th, td { text-align: left; padding: 5px 4px; border-top: 1px solid var(--line); }
+    th { color: var(--muted); font-weight: 500; }
+    .skip { color: var(--muted); font-size: 12px; word-break: break-word; }
+    .win { color: var(--ok); }
+    .loss { color: var(--bad); }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>PAPER week test</h1>
+      <p>Same Kraken books, same £20, same risk. TJR video rules vs ALPHA candlestick patterns.</p>
+    </div>
+    <p id="clock">—</p>
+  </header>
+  <div class="meta">
+    <span><i class="dot" id="live"></i><span id="liveLabel">connecting</span></span>
+    <span id="session">session —</span>
+    <span>Not financial advice. No live orders.</span>
+  </div>
+  <div class="grid" id="books"></div>
+  <script>
+    const gbp = (n) => "£" + Number(n || 0).toFixed(2);
+    function card(b) {
+      const cls = String(b.book || b.name || "").toLowerCase().includes("alpha") ? "alpha" : "tjr";
+      const openPnl = Number(b.equity) - Number(b.start);
+      const pos = b.position
+        ? `${(b.position.side || "").toUpperCase()} ${b.position.symbol} @ ${Number(b.position.entry).toFixed(2)} → TP ${Number(b.position.tp).toFixed(2)} / SL ${Number(b.position.stop).toFixed(2)}`
+        : b.working
+          ? `working ${b.working.side || ""} ${b.working.symbol} @ ${b.working.limit}`
+          : "flat";
+      const fills = (b.fills || []).slice(-6).reverse().map((f) => {
+        const clsP = Number(f.pnl_gbp) >= 0 ? "win" : "loss";
+        return `<tr><td>${(f.ts || "").slice(11, 19)}</td><td>${f.side || ""} ${f.symbol || ""}</td><td>${f.exit_reason || ""}</td><td class="${clsP}">${gbp(f.pnl_gbp)}</td></tr>`;
+      }).join("");
+      return `<article class="${cls}">
+        <div class="kicker">${b.model === "quant" ? "Candles + S/R · not TJR" : "TJR video model"}</div>
+        <h2>${b.name || b.book}</h2>
+        <div class="eq">${gbp(b.equity)}</div>
+        <div class="row"><span class="lbl">Open P&amp;L</span><span class="${openPnl >= 0 ? "win" : "loss"}">${gbp(openPnl)}</span></div>
+        <div class="row"><span class="lbl">Closed P&amp;L</span><span class="${b.pnl >= 0 ? "win" : "loss"}">${gbp(b.pnl)}</span></div>
+        <div class="row"><span class="lbl">Trades</span><span>${b.trades} · today ${b.trades_today} · WR ${(b.win_rate * 100).toFixed(0)}%</span></div>
+        <div class="row"><span class="lbl">Drawdown</span><span>${(b.drawdown_pct * 100).toFixed(1)}% vs 55% halt · kill ${b.kill_switch ? "ON" : "OFF"}</span></div>
+        <div class="row"><span class="lbl">Cash</span><span>${b.position ? gbp(b.cash) + " (rest is in the coin)" : gbp(b.cash)}</span></div>
+        <div class="pos">${pos}</div>
+        <p class="skip">${b.last_skip || "—"}</p>
+        <table><thead><tr><th>Time</th><th>Fill</th><th>Why</th><th>P&amp;L</th></tr></thead><tbody>${fills || "<tr><td colspan=4>No fills yet</td></tr>"}</tbody></table>
+      </article>`;
+    }
+    async function tick() {
+      try {
+        const k = new URLSearchParams(location.search).get("k") || "";
+        const res = await fetch("/api/snapshot?k=" + encodeURIComponent(k), { cache: "no-store" });
+        if (!res.ok) throw new Error("auth");
+        const data = await res.json();
+        document.getElementById("clock").textContent = new Date(data.now).toLocaleString();
+        document.getElementById("session").textContent = "session " + data.session;
+        document.getElementById("live").className = "dot";
+        document.getElementById("liveLabel").textContent = "live";
+        document.getElementById("books").innerHTML = (data.books || []).map(card).join("");
+      } catch (err) {
+        document.getElementById("live").className = "dot off";
+        document.getElementById("liveLabel").textContent = "dashboard offline";
+      }
+    }
+    tick();
+    setInterval(tick, 2000);
+  </script>
+</body>
+</html>

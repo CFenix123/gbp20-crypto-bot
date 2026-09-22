@@ -1,0 +1,8 @@
+.git
+.cursor
+canvases
+tools
+data
+*.log
+node_modules
+README.md

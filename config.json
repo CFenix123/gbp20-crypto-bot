@@ -1,0 +1,57 @@
+{
+  "book": "tjr",
+  "name": "TJR",
+  "mode": "PAPER",
+  "venue": "kraken",
+  "quote": "GBP",
+  "starting_gbp": 20,
+  "symbols": [
+    {
+      "id": "BTC/GBP",
+      "pair": "XBTGBP",
+      "peer": "ETH/GBP"
+    },
+    {
+      "id": "ETH/GBP",
+      "pair": "ETHGBP",
+      "peer": "BTC/GBP"
+    }
+  ],
+  "risk_pct_per_trade": 0.2,
+  "kill_switch_drawdown_pct": 0.55,
+  "max_open_positions": 1,
+  "max_trades_per_day": 3,
+  "max_full_losses_per_day": 2,
+  "min_rr": 2,
+  "min_stop_pct": 0.012,
+  "max_stop_pct": 0.03,
+  "min_grade": "B",
+  "allow_shorts": true,
+  "use_maker_entry": true,
+  "use_maker_tp": true,
+  "maker_fee": 0.004,
+  "taker_fee": 0.008,
+  "slippage_pct": 0.0003,
+  "maker_wait_seconds": 180,
+  "poll_seconds": 15,
+  "rate_limit_backoff_seconds": 25,
+  "entry_model": "video",
+  "video_ny_killzone": false,
+  "crypto_sessions_only": true,
+  "allow_ny_pm_if_a": true,
+  "htf_interval": 15,
+  "ltf_interval": 1,
+  "video_sweep_lookback": 16,
+  "video_bos_max_bars": 24,
+  "video_ifvg_lookback": 20,
+  "require_smt": false,
+  "symbol_stop_cooldown_seconds": 900,
+  "min_seconds_between_trades": 120,
+  "ordermin": {
+    "XBTGBP": 0.00005,
+    "ETHGBP": 0.001
+  },
+  "costmin": 0.43,
+  "state_path": "data/state.json",
+  "journal_path": "data/journal.csv"
+}
