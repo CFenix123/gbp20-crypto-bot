@@ -54,14 +54,15 @@ npm run bot
 
 Judge edge only after **≥30** closed paper trades. If expectancy is ≤ 0 after fees, do not go live.
 
-## Two-book week test (TJR vs ALPHA)
+## Three-book paper test (TJR vs ALPHA vs MIND)
 
-One process, one Kraken feed, two isolated £20 PAPER ledgers:
+One process, one Kraken feed, three isolated £20 PAPER ledgers:
 
 | Book | Rules |
 |---|---|
-| **TJR** | Video model (sweep / BOS / iFVG / FVG / SMT) |
+| **TJR** | Video model (sweep / BOS / iFVG / FVG / SMT) from [yiuFUp0kFz8](https://www.youtube.com/watch?v=yiuFUp0kFz8) |
 | **ALPHA** | Candlestick patterns from [tW13N4Hll88](https://www.youtube.com/watch?v=tW13N4Hll88) (engulfing, momentum, wick cluster, doji+confirm, hammer/star, tweezer, marubozu) at 15m support/resistance. Fees still skip stops under 1.2%. |
+| **MIND** | Mind Math Money patterns from [lEk4cSA7cqc](https://www.youtube.com/watch?v=lEk4cSA7cqc) (morning/evening star, piercing/dark cloud, inverted hammer/hanging man, three methods, flags, 2×-body momentum). Reversals need a prior opposite trend + S/R; continuations need the same-direction trend. |
 
 ```powershell
 cd C:\Users\tom61\gbp20-crypto-bot
@@ -69,11 +70,13 @@ npm test
 npm run both
 ```
 
-Dashboard: [http://127.0.0.1:8787](http://127.0.0.1:8787) — or the Fly.io URL if deployed (`fly deploy --ha=false`). Do not run a local `npm start` at the same time as the Fly app.
+Dashboard: [http://127.0.0.1:8787](http://127.0.0.1:8787) — or the Render URL if deployed. Do not run a local `npm start` at the same time as the cloud app.
 
 ```powershell
 npm run scorecard
 npm run scorecard:alpha
+npm run scorecard:mind
+npm run replay24
 ```
 
 ## Trade card (every idea)

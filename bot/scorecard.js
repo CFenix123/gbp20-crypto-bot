@@ -4,7 +4,11 @@ import { readJournal } from "./journal.js";
 import { loadConfig, loadState } from "./trader.js";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const file = process.argv.includes("--alpha") ? "config.alpha.json" : "config.json";
+const file = process.argv.includes("--mind")
+  ? "config.mind.json"
+  : process.argv.includes("--alpha")
+    ? "config.alpha.json"
+    : "config.json";
 const cfg = loadConfig(root, file);
 const state = loadState(cfg, root);
 const rows = readJournal(path.join(root, cfg.journal_path));

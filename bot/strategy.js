@@ -1,5 +1,6 @@
 import { evaluateVideoEntry } from "./video_model.js";
 import { evaluateQuantEntry } from "./quant_model.js";
+import { evaluateMindEntry } from "./mind_model.js";
 import { feesKillEdge, gradeOk, sessionGate } from "./risk.js";
 
 export function retagGrade(sig) {
@@ -16,16 +17,22 @@ export function evaluateSymbol({ id, htf, ltf, peerHtf, quote, cfg, now }) {
   if (!windowEvenForA.ok) {
     return { take: false, reason: windowEvenForA.reason, symbol: id };
   }
+  const patternBars = cfg.pattern_tf === "htf" ? htf : ltf;
   const raw =
     cfg.entry_model === "quant"
       ? evaluateQuantEntry(htf, ltf, quote, cfg, now)
-      : evaluateVideoEntry(htf, ltf, cfg, {
-          canShort: Boolean(cfg.allow_shorts),
-          now,
-          nyKillzone: Boolean(cfg.video_ny_killzone),
-          peerHtf,
-        });
-  const sig = cfg.entry_model === "quant" ? { ...raw, symbol: id, grade: raw.grade || "B" } : retagGrade({ ...raw, symbol: id });
+      : cfg.entry_model === "mind"
+        ? evaluateMindEntry(htf, patternBars, quote, cfg, now)
+        : evaluateVideoEntry(htf, ltf, cfg, {
+            canShort: Boolean(cfg.allow_shorts),
+            now,
+            nyKillzone: Boolean(cfg.video_ny_killzone),
+            peerHtf,
+          });
+  const sig =
+    cfg.entry_model === "quant" || cfg.entry_model === "mind"
+      ? { ...raw, symbol: id, grade: raw.grade || "B" }
+      : retagGrade({ ...raw, symbol: id });
   if (!sig.take) return sig;
   if (!gradeOk(sig.grade, cfg.min_grade)) {
     return { take: false, reason: "grade_too_low", grade: sig.grade, symbol: id };

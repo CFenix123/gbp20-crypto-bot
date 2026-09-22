@@ -30,12 +30,13 @@ function bootBook(file) {
   return { cfg, state: loadState(cfg, root) };
 }
 
-console.log("PAPER dual books — TJR vs ALPHA. Not financial advice.");
+console.log("PAPER triple books — TJR vs ALPHA vs MIND. Not financial advice.");
 console.log("20% per trade is a ceiling. Shared Kraken feed so we do not double-hit the API.");
 
 const tjr = bootBook("config.json");
 const alpha = bootBook("config.alpha.json");
-const books = [tjr, alpha];
+const mind = bootBook("config.mind.json");
+const books = [tjr, alpha, mind];
 const port = Number(process.env.PORT || process.env.DASH_PORT || 8787);
 const secret = loadOrCreateSecret(root);
 const publicHost =

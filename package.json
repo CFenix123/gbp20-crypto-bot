@@ -16,8 +16,11 @@
     "status": "node bot/status.js",
     "scorecard": "node bot/scorecard.js",
     "scorecard:alpha": "node bot/scorecard.js --alpha",
+    "scorecard:mind": "node bot/scorecard.js --mind",
     "reset": "node bot/reset.js",
     "reset:alpha": "node bot/reset.js --alpha",
-    "test": "node bot/video_model.test.js && node bot/paper.test.js && node bot/risk.test.js && node bot/quant_model.test.js"
+    "reset:mind": "node bot/reset.js --mind",
+    "replay24": "node bot/replay24.js",
+    "test": "node bot/video_model.test.js && node bot/paper.test.js && node bot/risk.test.js && node bot/quant_model.test.js && node bot/mind_model.test.js"
   }
 }
