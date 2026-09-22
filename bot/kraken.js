@@ -39,6 +39,7 @@ async function getJson(path) {
 
   const res = await fetch(`${BASE}/${path}`, {
     headers: { "User-Agent": "gbp20-crypto-bot/1.0 PAPER" },
+    signal: AbortSignal.timeout(10000),
   });
   if (res.status === 429) {
     cooldownUntil = Date.now() + 25000;

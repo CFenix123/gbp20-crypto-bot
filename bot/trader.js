@@ -129,21 +129,31 @@ export async function step(cfg, state, root, now = new Date(), sharedMarket = nu
     return { state, skip: gate.reason, events };
   }
 
-  const signals = cfg.symbols.map((sym) => {
+  const signals = [];
+  for (const sym of cfg.symbols) {
+    await new Promise((r) => setImmediate(r));
     const me = market[sym.id];
     const peer = market[sym.peer];
-    if (!me?.htf?.length) return { take: false, reason: "no_bars", symbol: sym.id };
-    if (symbolCooling(state, sym.id, now)) return { take: false, reason: "symbol_cooldown", symbol: sym.id };
-    return evaluateSymbol({
-      id: sym.id,
-      htf: me.htf,
-      ltf: me.ltf,
-      peerHtf: peer?.htf,
-      quote: me.quote,
-      cfg,
-      now,
-    });
-  });
+    if (!me?.htf?.length) {
+      signals.push({ take: false, reason: "no_bars", symbol: sym.id });
+      continue;
+    }
+    if (symbolCooling(state, sym.id, now)) {
+      signals.push({ take: false, reason: "symbol_cooldown", symbol: sym.id });
+      continue;
+    }
+    signals.push(
+      evaluateSymbol({
+        id: sym.id,
+        htf: me.htf,
+        ltf: me.ltf,
+        peerHtf: peer?.htf,
+        quote: me.quote,
+        cfg,
+        now,
+      })
+    );
+  }
 
   const best = pickBest(signals);
   if (!best) {

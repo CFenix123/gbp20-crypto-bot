@@ -54,20 +54,30 @@ export function startUiServer({ root, port = 8787, host = "0.0.0.0", secret, get
       return;
     }
     if (url.pathname === "/api/snapshot") {
-      const body = JSON.stringify(getSnapshot());
-      res.writeHead(200, {
-        "Content-Type": "application/json; charset=utf-8",
-        "Cache-Control": "no-store",
-      });
-      res.end(body);
+      try {
+        const body = JSON.stringify(getSnapshot());
+        res.writeHead(200, {
+          "Content-Type": "application/json; charset=utf-8",
+          "Cache-Control": "no-store",
+        });
+        res.end(body);
+      } catch (err) {
+        res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+        res.end(JSON.stringify({ error: "snapshot", message: String(err?.message || err) }));
+      }
       return;
     }
     if (url.pathname === "/api/ledger" && getLedger) {
-      res.writeHead(200, {
-        "Content-Type": "application/json; charset=utf-8",
-        "Cache-Control": "no-store",
-      });
-      res.end(JSON.stringify(getLedger()));
+      try {
+        res.writeHead(200, {
+          "Content-Type": "application/json; charset=utf-8",
+          "Cache-Control": "no-store",
+        });
+        res.end(JSON.stringify(getLedger()));
+      } catch (err) {
+        res.writeHead(500, { "Content-Type": "application/json; charset=utf-8" });
+        res.end(JSON.stringify({ error: "ledger", message: String(err?.message || err) }));
+      }
       return;
     }
     let file = url.pathname === "/" ? "/index.html" : url.pathname;
